@@ -229,37 +229,6 @@ def add_station_stats(
     return df_target
 
 
-# ── 날씨 피처 ────────────────────────────────────────────────────────────────
-def add_weather_features(
-    df: pd.DataFrame,
-    weather_df: pd.DataFrame,
-    dt_col: str = "datetime_hour",
-) -> pd.DataFrame:
-    """
-    날씨 데이터를 시간 기준으로 merge하고 파생 피처를 추가합니다.
-
-    Parameters
-    ----------
-    df         : 대상 DataFrame (datetime_hour 컬럼 필요)
-    weather_df : 날씨 DataFrame (datetime_hour, temp_c, precip_mm, windspeed_kmh, humidity_pct)
-    dt_col     : 날짜 컬럼명
-
-    Returns
-    -------
-    날씨 피처가 추가된 DataFrame
-    """
-    weather = weather_df.copy()
-    weather["datetime_hour"] = pd.to_datetime(weather["datetime_hour"])
-
-    df = df.copy()
-    df = df.merge(weather, on=dt_col, how="left")
-
-    # 파생 피처
-    df["is_rain"] = (df["precip_mm"] > 0).astype(int)
-    df["is_cold"] = (df["temp_c"] < 5).astype(int)
-
-    return df
-
 
 # ── 반납 대여소 예측 피처 ─────────────────────────────────────────────────────
 def build_return_station_features(df: pd.DataFrame) -> pd.DataFrame:
