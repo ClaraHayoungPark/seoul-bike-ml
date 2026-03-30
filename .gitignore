@@ -26,8 +26,6 @@ __pycache__/
 .DS_Store
 **/.DS_Store
 
-# 리포트 이미지 (선택적)
-reports/figures/
 
 # 환경변수
 .env
