@@ -67,6 +67,8 @@
 
 ![STL 수요 이상 패턴](reports/figures/stl_pattern_calendar.png)
 
+![일별 대여량 및 STL 이상치 탐지 시점](reports/figures/stl_daily_anomaly.png)
+
 **비즈니스 인사이트 A: 날씨·요일 기반 운영 캘린더**
 
 STL 이상치 패턴에서 두 가지 운영 룰을 도출할 수 있습니다.
@@ -128,6 +130,8 @@ IF 탐지 건이 장거리 정상 이용이었다는 발견을 바탕으로, 10k
 > - **최종 모델: Step 3** (MAE 2.646, 평균 베이스라인 대비 **38.5% 개선**)
 
 ![예측 vs 실제 비교](reports/figures/time_pred_comparison.png)
+
+![베이스라인 vs LightGBM 비교](reports/figures/demand_baseline_comparison.png)
 
 ---
 
