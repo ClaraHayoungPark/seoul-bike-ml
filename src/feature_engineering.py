@@ -180,6 +180,46 @@ def build_lag_features(
     return df
 
 
+def complete_hourly_panel(
+    hourly_df: pd.DataFrame,
+    station_ids: list[str] | pd.Index | None = None,
+    time_col: str = "datetime_hour",
+    station_col: str = "stn_id",
+    value_cols: list[str] | None = None,
+) -> pd.DataFrame:
+    """
+    대여소×시간 전체 패널을 생성하고, 관측이 없는 시간대는 0으로 채웁니다.
+
+    수요 예측에서는 래그 피처가 긴 구간(예: 720h)을 사용하므로,
+    이벤트가 없던 시간대를 누락한 sparse 집계 그대로 쓰면 대부분의 대여소가
+    전처리 단계에서 탈락할 수 있습니다.
+    """
+    if value_cols is None:
+        value_cols = ["rent_count", "rtrn_count", "net_flow"]
+
+    df = hourly_df.copy()
+    df[time_col] = pd.to_datetime(df[time_col])
+
+    if station_ids is None:
+        station_ids = df[station_col].sort_values().unique()
+
+    full_hours = pd.date_range(df[time_col].min(), df[time_col].max(), freq="h")
+    full_index = pd.MultiIndex.from_product(
+        [station_ids, full_hours],
+        names=[station_col, time_col],
+    )
+
+    panel = (
+        df.set_index([station_col, time_col])[value_cols]
+        .reindex(full_index, fill_value=0)
+        .reset_index()
+        .sort_values([station_col, time_col])
+        .reset_index(drop=True)
+    )
+
+    return panel
+
+
 # ── 대여소별 통계 피처 (회귀 타겟 인코딩) ────────────────────────────────────
 def add_station_stats(
     df_train: pd.DataFrame,

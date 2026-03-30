@@ -90,31 +90,31 @@
 
 **모델**: LightGBM (MAE 최소화, L1 loss)
 
-**데이터**: 상위 100개 대여소 × 시간별 집계, 학습 4,868건 / 테스트 1,623건
+**데이터**: 상위 100개 대여소 × 시간별 집계를 **누락 시간대까지 0으로 채운 dense hourly panel**로 재구성. 전체 220,800행 중 lag/rolling 및 `net_flow lag` 생성 후 **132,000행**을 사용했고, `2025-12-18 06:00` 이전 99,000행을 학습, 이후 33,000행을 테스트로 평가
 
 ---
 
 ### 2-1. Ablation Study — 피처 기여도 검증
 
-동일한 모델 구조에서 피처 셋만 단계적으로 추가해 각 피처 그룹의 기여도를 측정했습니다.
+동일한 모델 구조에서 피처 셋만 단계적으로 추가해 각 피처 그룹의 기여도를 측정했습니다. 이번에는 모든 대여소에 대해 **같은 시점 이전은 학습, 이후는 테스트**가 되도록 재구성해, README의 표와 그림이 실제 운영 시나리오와 같은 `과거 → 미래` 예측을 가리키도록 정리했습니다.
 
 | 단계 | 피처 구성 | 피처 수 | MAE | 개선율 |
 |---|---|---|---|---|
-| 평균 베이스라인 | 학습 전체 평균 | — | 4.305건 | 기준 |
-| Step 1 | 대여소, 시간, 요일, 월, 주말, 공휴일 | 8 | 3.532건 | — |
-| Step 2 | Step 1 + lag (1h~720h, rolling mean) | 19 | 2.766건 | **-21.7%** |
-| Step 3 | Step 2 + net_flow lag (1h, 24h, 168h) | 22 | **2.646건** | **-4.3%** |
-| Step 4 | Step 3 + 순환 인코딩 (sin/cos) | 26 | 2.679건 | +1.2% (악화) |
+| 평균 베이스라인 | 학습 전체 평균 | — | 3.851건 | 기준 |
+| Step 1 | 대여소, 시간, 요일, 월, 주말, 공휴일 | 8 | 2.069건 | — |
+| Step 2 | Step 1 + lag (1h~720h, rolling mean) | 19 | 1.748건 | **-15.5%** |
+| Step 3 | Step 2 + net_flow lag (1h, 24h, 168h) | 22 | **1.698건** | **-2.9%** |
+| Step 4 | Step 3 + 순환 인코딩 (sin/cos) | 26 | 1.701건 | +0.2% (악화) |
 
-- **lag 피처가 단일 최대 기여(21.7%)**: 직전 같은 시간대 대여량이 가장 강력한 예측 신호
+- **lag 피처가 단일 최대 기여(15.5%)**: 직전/전일/전주 수요가 가장 강력한 예측 신호
 - **순환 인코딩은 오히려 소폭 악화**: LightGBM이 hour/dow 정수값을 이미 충분히 활용하기 때문
-- **최종 모델: Step 3** (MAE 2.646, 평균 베이스라인 대비 **38.5% 개선**)
+- **최종 모델: Step 3** (MAE 1.698, 평균 베이스라인 대비 **55.9% 개선**)
 
-![피처 단계별 MAE 변화](reports/figures_readme/ablation_mae.png)
+![피처 단계별 MAE 변화](reports/figures/ablation_mae.png)
 
-![예측 vs 실제 비교](reports/figures_readme/time_pred_comparison.png)
+![Step 3 LightGBM 예측 vs 실제 비교](reports/figures/demand_forecast_sample.png)
 
-![베이스라인 vs LightGBM 비교](reports/figures_readme/demand_baseline_comparison.png)
+![베이스라인 vs Step 3 LightGBM 비교](reports/figures/demand_baseline_comparison.png)
 
 ---
 
