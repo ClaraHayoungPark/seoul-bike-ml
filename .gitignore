@@ -22,6 +22,9 @@ __pycache__/
 *.pyd
 .Python
 
+# 시각화 산출물 (README용 이미지는 reports/figures_readme/ 에서 관리)
+reports/figures/
+
 # macOS
 .DS_Store
 **/.DS_Store
