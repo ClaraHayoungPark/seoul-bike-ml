@@ -17,15 +17,15 @@
 
 ## 분석 구성
 
-| 분석 | 핵심 질문 |
-|---|---|
-| 01. 대여소 수요 이상 탐지 | 운영에 실제 영향을 주는 비정상 패턴이 언제, 어디서 발생하는가? |
-| 02. 수요 예측 | 다음 1시간 대여 건수를 예측해 재배치 계획을 자동화할 수 있는가? |
-| 03. 사용자 클러스터링 | 이용 패턴이 다른 사용자 그룹은 어떻게 구분되는가? |
+| 분석 | 핵심 질문 | 핵심 결과 |
+|---|---|---|
+| 01. 대여소 수요 이상 탐지 | 운영에 실제 영향을 주는 비정상 패턴이 언제, 어디서 발생하는가? | 2,776건 탐지, 평일 17~19시 급증이 반복 패턴 |
+| 02. 수요 예측 | 다음 1시간 대여 건수를 예측해 재배치 계획을 자동화할 수 있는가? | MAE 1.698 (베이스라인 대비 55.9% 개선) |
+| 03. 사용자 클러스터링 | 이용 패턴이 다른 사용자 그룹은 어떻게 구분되는가? | 3개 그룹: 저녁/오전 단거리형 + 장거리형 |
 
 ---
 
-# 01. 대여소 수요 이상 탐지 (Demand Anomaly Detection)
+## 01. 대여소 수요 이상 탐지 (Demand Anomaly Detection)
 
 **목표**: 운영적으로 대응 가능한 대여소 수요 급증·급감 시점을 탐지
 
@@ -84,7 +84,7 @@
 
 ---
 
-# 02. 수요 예측 (Demand Forecasting)
+## 02. 수요 예측 (Demand Forecasting)
 
 **목표**: 각 대여소의 다음 1시간 대여 건수 예측
 
@@ -127,11 +127,13 @@
 
 ---
 
-# 03. 사용자 클러스터링 (User Clustering)
+## 03. 사용자 클러스터링 (User Clustering)
 
 **목표**: 이용 행태 기반 사용자 그룹 분류
 
 **모델**: K-Means (최종 선택 k=3, Silhouette Score 0.185, Stability ARI 0.999)
+
+> Silhouette Score가 낮은 이유는 이용시간·거리가 연속 분포를 가져 군집 간 경계가 명확하지 않기 때문입니다. 반면 Stability ARI 0.999는 군집 분류 자체가 매우 안정적임을 의미합니다.
 
 **피처**: `log(이용시간)`, `log(이동거리)`, 시간대 sin/cos, 요일 sin/cos
 
@@ -183,7 +185,7 @@
 | 데이터 처리 | pandas, numpy, pyarrow |
 | 머신러닝 | scikit-learn, LightGBM |
 | 시계열 분해 | statsmodels (STL) |
-| 시각화 | matplotlib |
+| 시각화 | matplotlib, seaborn |
 | 개발 환경 | JupyterLab |
 
 ---
@@ -191,10 +193,16 @@
 ## 실행 방법
 
 ```bash
+# 1. 데이터 준비
+# 서울 열린데이터광장 > 공공자전거 이용정보에서 2025년 10~12월 CSV 다운로드
+# → data/raw/ 폴더에 저장
+
+# 2. 환경 설정
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
+# 3. 노트북 실행
 jupyter lab
 # 실행 순서: 00_EDA → 01_anomaly_detection → 02_demand_forecasting → 03_user_clustering
 ```
