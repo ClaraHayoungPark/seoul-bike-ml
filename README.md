@@ -110,11 +110,11 @@
 - **순환 인코딩은 오히려 소폭 악화**: LightGBM이 hour/dow 정수값을 이미 충분히 활용하기 때문
 - **최종 모델: Step 3** (MAE 1.698, 평균 베이스라인 대비 **55.9% 개선**)
 
-![피처 단계별 MAE 변화](reports/figures/ablation_mae.png)
+![피처 단계별 MAE 변화](reports/figures_readme/ablation_mae.png)
 
-![Step 3 LightGBM 예측 vs 실제 비교](reports/figures/demand_forecast_sample.png)
+![Step 3 LightGBM 예측 vs 실제 비교](reports/figures_readme/demand_forecast_sample.png)
 
-![베이스라인 vs Step 3 LightGBM 비교](reports/figures/demand_baseline_comparison.png)
+![베이스라인 vs Step 3 LightGBM 비교](reports/figures_readme/demand_baseline_comparison.png)
 
 ---
 
