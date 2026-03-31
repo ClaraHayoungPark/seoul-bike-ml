@@ -31,6 +31,27 @@ from src.feature_engineering import add_user_features, build_trip_features
 
 FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+PROFILE_COLUMNS = [
+    "use_min",
+    "use_m",
+    "speed_kmh",
+    "hour",
+    "dow",
+    "age",
+    "gender_enc",
+    "user_type",
+    "is_round_trip",
+    "rent_dt",
+]
+CLUSTER_PROFILE_COLUMNS = [
+    "use_min",
+    "use_m",
+    "speed_kmh",
+    "hour",
+    "dow",
+    "age",
+    "is_round_trip",
+]
 
 
 @dataclass
@@ -54,6 +75,40 @@ def _cyclical_encode(values: pd.Series, period: int, prefix: str) -> pd.DataFram
         },
         index=values.index,
     )
+
+
+def _clip_log_feature(values: pd.Series, upper_quantile: float = 0.995) -> pd.Series:
+    return np.log1p(values.clip(upper=values.quantile(upper_quantile)))
+
+
+def _available_columns(df: pd.DataFrame, candidates: list[str]) -> list[str]:
+    return [col for col in candidates if col in df.columns]
+
+
+def _make_estimator(
+    model_name: str,
+    n_clusters: int,
+    random_state: int,
+) -> KMeans | GaussianMixture:
+    if model_name == "kmeans":
+        return KMeans(n_clusters=n_clusters, random_state=random_state, n_init=20)
+    if model_name == "gmm":
+        return GaussianMixture(
+            n_components=n_clusters,
+            covariance_type="full",
+            random_state=random_state,
+            n_init=5,
+        )
+    raise ValueError(f"Unsupported model_name: {model_name}")
+
+
+def _collect_clustering_metrics(X_scaled: np.ndarray, labels: np.ndarray) -> dict[str, float]:
+    return {
+        "silhouette": _sample_silhouette(X_scaled, labels),
+        "calinski_harabasz": float(calinski_harabasz_score(X_scaled, labels)),
+        "davies_bouldin": float(davies_bouldin_score(X_scaled, labels)),
+        "cluster_balance": _cluster_balance(labels),
+    }
 
 
 def build_behavior_clustering_frame(
@@ -81,27 +136,15 @@ def build_behavior_clustering_frame(
     df["use_m"] = df["use_m"].clip(lower=0)
 
     behavior = pd.DataFrame(index=df.index)
-    behavior["log_use_min"] = np.log1p(df["use_min"].clip(upper=df["use_min"].quantile(0.995)))
-    behavior["log_use_m"] = np.log1p(df["use_m"].clip(upper=df["use_m"].quantile(0.995)))
+    behavior["log_use_min"] = _clip_log_feature(df["use_min"])
+    behavior["log_use_m"] = _clip_log_feature(df["use_m"])
     behavior["speed_kmh"] = df["speed_kmh"].clip(upper=df["speed_kmh"].quantile(0.995))
     behavior["is_round_trip"] = df["is_round_trip"].fillna(0).astype(int)
 
     behavior = behavior.join(_cyclical_encode(df["hour"], period=24, prefix="hour"))
     behavior = behavior.join(_cyclical_encode(df["dow"], period=7, prefix="dow"))
 
-    profile_cols = [
-        "use_min",
-        "use_m",
-        "speed_kmh",
-        "hour",
-        "dow",
-        "age",
-        "gender_enc",
-        "user_type",
-        "is_round_trip",
-        "rent_dt",
-    ]
-    available_profile_cols = [col for col in profile_cols if col in df.columns]
+    available_profile_cols = _available_columns(df, PROFILE_COLUMNS)
     available_profile_cols = [
         col for col in available_profile_cols if col not in behavior.columns
     ]
@@ -157,23 +200,13 @@ def evaluate_cluster_candidates(
     X = df_features[feature_cols]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
+    model_names = ("kmeans", "gmm")
 
     rows: list[dict[str, float | int | str]] = []
     for n_clusters in cluster_range:
-        model_specs = [
-            ("kmeans", KMeans(n_clusters=n_clusters, random_state=random_states[0], n_init=20)),
-            (
-                "gmm",
-                GaussianMixture(
-                    n_components=n_clusters,
-                    covariance_type="full",
-                    random_state=random_states[0],
-                    n_init=5,
-                ),
-            ),
-        ]
-        for model_name, base_estimator in model_specs:
+        for model_name in model_names:
             print(f"평가 중: model={model_name}, k={n_clusters}")
+            base_estimator = _make_estimator(model_name, n_clusters, random_states[0])
             estimator = clone(base_estimator)
             labels = _labels_from_estimator(estimator, X_scaled)
 
@@ -189,10 +222,7 @@ def evaluate_cluster_candidates(
                 {
                     "model": model_name,
                     "n_clusters": n_clusters,
-                    "silhouette": _sample_silhouette(X_scaled, labels),
-                    "calinski_harabasz": float(calinski_harabasz_score(X_scaled, labels)),
-                    "davies_bouldin": float(davies_bouldin_score(X_scaled, labels)),
-                    "cluster_balance": _cluster_balance(labels),
+                    **_collect_clustering_metrics(X_scaled, labels),
                     "stability_ari": float(np.mean(stability_scores)),
                 }
             )
@@ -213,30 +243,13 @@ def fit_best_clustering(
     X = df_features[feature_cols]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-
-    if model_name == "kmeans":
-        estimator = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=20)
-        labels = estimator.fit_predict(X_scaled)
-    elif model_name == "gmm":
-        estimator = GaussianMixture(
-            n_components=n_clusters,
-            covariance_type="full",
-            random_state=random_state,
-            n_init=5,
-        )
-        labels = estimator.fit_predict(X_scaled)
-    else:
-        raise ValueError(f"Unsupported model_name: {model_name}")
+    estimator = _make_estimator(model_name, n_clusters, random_state)
+    labels = estimator.fit_predict(X_scaled)
 
     clustered = df_features.copy()
     clustered["cluster"] = labels
 
-    metrics = {
-        "silhouette": _sample_silhouette(X_scaled, labels),
-        "calinski_harabasz": float(calinski_harabasz_score(X_scaled, labels)),
-        "davies_bouldin": float(davies_bouldin_score(X_scaled, labels)),
-        "cluster_balance": _cluster_balance(labels),
-    }
+    metrics = _collect_clustering_metrics(X_scaled, labels)
     profile = build_cluster_profile(clustered)
 
     return ClusteringArtifacts(
@@ -252,16 +265,7 @@ def fit_best_clustering(
 
 
 def build_cluster_profile(df_clustered: pd.DataFrame, cluster_col: str = "cluster") -> pd.DataFrame:
-    profile_cols = [
-        "use_min",
-        "use_m",
-        "speed_kmh",
-        "hour",
-        "dow",
-        "age",
-        "is_round_trip",
-    ]
-    available = [col for col in profile_cols if col in df_clustered.columns]
+    available = _available_columns(df_clustered, CLUSTER_PROFILE_COLUMNS)
     profile = (
         df_clustered.groupby(cluster_col)[available]
         .agg(["mean", "median"])

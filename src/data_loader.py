@@ -5,8 +5,6 @@ data_loader.py
 모든 노트북에서 import하여 사용합니다.
 """
 
-import gc
-import os
 from pathlib import Path
 
 import numpy as np

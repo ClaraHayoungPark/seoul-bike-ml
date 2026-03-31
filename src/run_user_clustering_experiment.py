@@ -15,36 +15,31 @@ from src.clustering import (
     save_results_table,
 )
 
+FEATURE_COLS = [
+    "log_use_min",
+    "log_use_m",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+]
+
 
 def main() -> None:
-    feature_cols = [
-        "log_use_min",
-        "log_use_m",
-        "hour_sin",
-        "hour_cos",
-        "dow_sin",
-        "dow_cos",
-    ]
-
     df_features = build_behavior_clustering_frame()
     print(f"군집화 입력 데이터: {len(df_features):,}행")
-    print(f"사용 피처: {feature_cols}")
+    print(f"사용 피처: {FEATURE_COLS}")
 
     results = evaluate_cluster_candidates(
         df_features,
-        feature_cols=feature_cols,
+        feature_cols=FEATURE_COLS,
         cluster_range=range(3, 6),
     )
     print("\n=== 후보 비교 결과 ===")
     print(results.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
 
-    best = (
-        results.sort_values(
-            ["cluster_balance", "silhouette", "stability_ari"],
-            ascending=[False, False, False],
-        )
-        .iloc[0]
-    )
+    ranking_cols = ["cluster_balance", "silhouette", "stability_ari"]
+    best = results.sort_values(ranking_cols, ascending=False).iloc[0]
     print(
         "\n선택된 실험:"
         f" model={best['model']}, k={int(best['n_clusters'])},"
@@ -55,7 +50,7 @@ def main() -> None:
 
     artifacts = fit_best_clustering(
         df_features,
-        feature_cols=feature_cols,
+        feature_cols=FEATURE_COLS,
         model_name=str(best["model"]),
         n_clusters=int(best["n_clusters"]),
     )

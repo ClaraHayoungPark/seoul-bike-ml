@@ -61,7 +61,7 @@ def add_user_features(df: pd.DataFrame, ref_year: int = 2025) -> pd.DataFrame:
 
     if "birth_year" in df.columns:
         df["age"] = ref_year - df["birth_year"]
-        bins   = [0, 24, 34, 49, 64, 200]
+        bins = [0, 24, 34, 49, 64, 200]
         labels = ["youth", "young_adult", "adult", "middle", "senior"]
         df["age_group"] = pd.cut(df["age"], bins=bins, labels=labels)
 
@@ -97,12 +97,10 @@ def build_trip_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 왕복 여부
     if "rent_stn_id" in df.columns and "rtrn_stn_id" in df.columns:
-        df["is_round_trip"] = (
-            df["rent_stn_id"] == df["rtrn_stn_id"]
-        ).astype(int)
+        df["is_round_trip"] = (df["rent_stn_id"] == df["rtrn_stn_id"]).astype(int)
 
     # 거리 구간
-    bins   = [-1, 500, 2000, 5000, 50001]
+    bins = [-1, 500, 2000, 5000, 50001]
     labels = ["short", "medium", "long", "very_long"]
     df["dist_bucket"] = pd.cut(df["use_m"], bins=bins, labels=labels)
 
@@ -245,26 +243,37 @@ def add_station_stats(
     global_avg_time = df_train["use_min"].mean()
     global_avg_dist = df_train["use_m"].mean()
 
-    # 대여소별 평균
-    stn_stats = df_train.groupby("rent_stn_id").agg(
-        stn_avg_time=("use_min", "mean"),
-        stn_avg_dist=("use_m", "mean"),
-    ).reset_index()
-    df_target = df_target.merge(stn_stats, on="rent_stn_id", how="left")
-    df_target["stn_avg_time"] = df_target["stn_avg_time"].fillna(global_avg_time)
-    df_target["stn_avg_dist"] = df_target["stn_avg_dist"].fillna(global_avg_dist)
+    merge_specs = [
+        (
+            df_train.groupby("rent_stn_id").agg(
+                stn_avg_time=("use_min", "mean"),
+                stn_avg_dist=("use_m", "mean"),
+            ).reset_index(),
+            ["rent_stn_id"],
+            {
+                "stn_avg_time": global_avg_time,
+                "stn_avg_dist": global_avg_dist,
+            },
+        ),
+        (
+            df_train.groupby(["rent_stn_id", "hour"])["use_min"]
+            .mean()
+            .reset_index(name="stn_hour_avg_time"),
+            ["rent_stn_id", "hour"],
+            {"stn_hour_avg_time": global_avg_time},
+        ),
+        (
+            df_train.groupby(["rent_stn_id", "is_weekend"])["use_min"]
+            .mean()
+            .reset_index(name="stn_weekend_avg_time"),
+            ["rent_stn_id", "is_weekend"],
+            {"stn_weekend_avg_time": global_avg_time},
+        ),
+    ]
 
-    # 대여소×시간대 평균
-    stn_hour = df_train.groupby(["rent_stn_id", "hour"])["use_min"].mean().reset_index()
-    stn_hour = stn_hour.rename(columns={"use_min": "stn_hour_avg_time"})
-    df_target = df_target.merge(stn_hour, on=["rent_stn_id", "hour"], how="left")
-    df_target["stn_hour_avg_time"] = df_target["stn_hour_avg_time"].fillna(global_avg_time)
-
-    # 대여소×주말 평균
-    stn_weekend = df_train.groupby(["rent_stn_id", "is_weekend"])["use_min"].mean().reset_index()
-    stn_weekend = stn_weekend.rename(columns={"use_min": "stn_weekend_avg_time"})
-    df_target = df_target.merge(stn_weekend, on=["rent_stn_id", "is_weekend"], how="left")
-    df_target["stn_weekend_avg_time"] = df_target["stn_weekend_avg_time"].fillna(global_avg_time)
+    for stats_df, keys, fill_values in merge_specs:
+        df_target = df_target.merge(stats_df, on=keys, how="left")
+        df_target = df_target.fillna(fill_values)
 
     return df_target
 
@@ -276,17 +285,15 @@ def build_return_station_features(df: pd.DataFrame) -> pd.DataFrame:
     반납 대여소 예측에 필요한 피처를 선택/구성합니다.
     전제: add_user_features(), encode_station_id() 가 이미 적용된 df.
     """
-    feature_cols = [
-        col for col in [
-            "rent_stn_id_enc",
-            "hour",
-            "dow",
-            "is_weekend",
-            "gender_enc",
-            "age_group",
-            "bike_type_enc",
-            "time_slot",
-        ]
-        if col in df.columns
+    candidate_cols = [
+        "rent_stn_id_enc",
+        "hour",
+        "dow",
+        "is_weekend",
+        "gender_enc",
+        "age_group",
+        "bike_type_enc",
+        "time_slot",
     ]
+    feature_cols = [col for col in candidate_cols if col in df.columns]
     return df[feature_cols + ["rtrn_stn_id"]].dropna(subset=["rtrn_stn_id"])

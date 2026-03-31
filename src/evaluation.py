@@ -14,9 +14,6 @@ from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score,
-    classification_report,
-    confusion_matrix,
-    ConfusionMatrixDisplay,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -44,14 +41,19 @@ _set_korean_font()
 # ── 회귀 평가 ──────────────────────────────────────────────────────────────────
 def regression_report(y_true, y_pred, label: str = "") -> dict:
     """MAE, RMSE, MAPE, R² 지표를 계산하여 출력하고 dict로 반환합니다."""
-    mae  = mean_absolute_error(y_true, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    r2   = r2_score(y_true, y_pred)
+    y_true_arr = np.asarray(y_true)
+    y_pred_arr = np.asarray(y_pred)
+    mae = mean_absolute_error(y_true_arr, y_pred_arr)
+    rmse = np.sqrt(mean_squared_error(y_true_arr, y_pred_arr))
+    r2 = r2_score(y_true_arr, y_pred_arr)
 
     # MAPE (0으로 나누기 방지)
-    mask = np.array(y_true) != 0
-    mape = np.mean(np.abs((np.array(y_true)[mask] - np.array(y_pred)[mask])
-                          / np.array(y_true)[mask])) * 100 if mask.any() else np.nan
+    mask = y_true_arr != 0
+    mape = (
+        np.mean(np.abs((y_true_arr[mask] - y_pred_arr[mask]) / y_true_arr[mask])) * 100
+        if mask.any()
+        else np.nan
+    )
 
     result = {"MAE": mae, "RMSE": rmse, "MAPE(%)": mape, "R²": r2}
     header = f"[{label}] " if label else ""
