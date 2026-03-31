@@ -75,7 +75,7 @@ K-Means와 GMM을 k=2~6 범위에서 Silhouette, Calinski-Harabasz, Davies-Bould
 
 > **피처 실험**: 초기에는 `is_weekend`와 `bike_type`이 군집 분리를 과도하게 주도했습니다. 두 변수를 제외하고 시간·요일을 주기형 인코딩으로 바꾸자 실제 이용 행태 중심의 군집이 형성됐습니다.
 
-![K-Means vs GMM 모델 비교 지표](reports/figures/cluster_model_comparison.png)
+![K-Means vs GMM 모델 비교 지표](reports/figures_readme/cluster_model_comparison.png)
 
 ---
 
@@ -99,7 +99,7 @@ K-Means와 GMM을 k=2~6 범위에서 Silhouette, Calinski-Harabasz, Davies-Bould
 
 STL을 선택하기 전에 더 단순한 두 가지 방법과 비교했습니다. Z-score와 IQR은 전체 시계열의 통계로 이상을 판단하므로, 매일 반복되는 출근 피크(07~09시)를 이상으로 오탐합니다. STL은 일별 계절성을 먼저 제거한 뒤 잔차에서만 이상을 탐지하므로 구조적 패턴과 실제 이상을 구분할 수 있습니다.
 
-![STL vs Z-score vs IQR 방법 비교](reports/figures/anomaly_method_comparison.png)
+![STL vs Z-score vs IQR 방법 비교](reports/figures_readme/anomaly_method_comparison.png)
 
 ---
 
@@ -184,7 +184,7 @@ STL을 선택하기 전에 더 단순한 두 가지 방법과 비교했습니다
 
 MAE 1.698이 시간대·대여소별로 어떻게 분포하는지 분석합니다.
 
-![시간대별·대여소별 오차 분석](reports/figures/demand_error_analysis.png)
+![시간대별·대여소별 오차 분석](reports/figures_readme/demand_error_analysis.png)
 
 - **시간대별**: 출근(07~09시)·퇴근(17~19시) 피크에서 MAE가 높음. 급격한 수요 변화는 lag 피처만으로 완전히 포착되지 않으며, 날씨·이벤트 정보가 추가 개선 여지를 제공
 - **대여소별**: 변동성이 큰 환승역·업무지구 인근에서 MAE가 높고, 안정적인 주거지형 대여소에서 낮음
