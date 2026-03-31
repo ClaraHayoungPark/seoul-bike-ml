@@ -3,7 +3,10 @@
 ## 1. 프로젝트 개요
 서울시 따릉이 2025년 4분기 대여 기록 **855만 건**을 분석해 자전거 재배치 의사결정을 자동화합니다. 이용자 유형을 파악하고, 수요 급증 패턴을 감지하고, 시간별 수요를 예측하는 3단계 ML 파이프라인으로 구성됩니다.
 
-**결과 요약:** 이용자 3가지 유형 식별 · 평일 17~19시 급증은 매주 반복되는 자동화 가능한 패턴 · 수요를 시간당 **약 1.7건** 오차로 예측
+**요약:**  
+이용자 3가지 유형 식별  
+평일 17~19시 급증은 매주 반복되는 자동화 가능한 패턴  
+수요를 시간당 **약 1.7건** 오차로 예측
 
 ---
 
@@ -13,7 +16,7 @@
 
 <img src="reports/figures_readme/cluster_scatter_2d.png" width="750">
 
-<img src="reports/figures_readme/cluster_hour_dist.png" width="580">
+<img src="reports/figures_readme/cluster_hour_dist.png" width="750">
 
 * **목표:** 이용자의 행동 패턴 파악
 * **분석:** K-Means (K=3, GMM 대비 실루엣 스코어 우위)
@@ -28,16 +31,13 @@
 70%는 10분 이내 평일 통근, 30%는 주말 여가 이용자입니다.
 
 * **제안:**
-
 **퇴근 단거리형:** 환승역·업무지구 대여소에 17시 이전 재고 확보
-
 **출근 단거리형:** 주거지·학교 근처 대여소 08~10시 공급 안정화
-
 **오후 장거리형:** 공원·한강변 오후 공급 유지, 주말 여가 프로모션 타겟
 
 ### B. 수요 급증 패턴 — 언제 어디서 반복되는가
 
-<img src="reports/figures_readme/stl_pattern_calendar.png" width="580">
+<img src="reports/figures_readme/stl_pattern_calendar.png" width="850">
 
 <img src="reports/figures_readme/stl_evening_priority_stations.png" width="750">
 
@@ -57,16 +57,14 @@
 | 평일 출근 급감 (08시) | 20건 | 0.7% | 빈도 낮아 규칙화 어려움 |
 
 * **제안:**
-
 **17시 이전 사전 재배치:** 저녁 급증 반복 대여소(ST-18, ST-1064, ST-3311 등) 우선 재고 확충
-
 **주말·공휴일 분리:** 이상 알림에서 제외하고 별도 운영 기준 적용
 
 ### C. 시간별 수요 예측 — 얼마나 정확하게 알 수 있는가
 
 <img src="reports/figures_readme/ablation_mae.png" width="750">
 
-<img src="reports/figures_readme/demand_forecast_sample.png" width="580">
+<img src="reports/figures_readme/demand_forecast_sample.png" width="850">
 
 * **목표:** 시간별 수요 예측 정확도 파악
 * **분석:** LightGBM (피처 ablation 실험)
@@ -81,7 +79,5 @@
 | + 시간을 수학 변환 | 1.738건 | 개선 없음 — 제거 근거 |
 
 * **제안:**
-
 **출근 피크 자동화:** 전날 밤 10시에 07~09시 고갈 예상 대여소 목록 자동 생성
-
 **재배치 동선 최적화:** 예측 수요 + 주변 여유분으로 공급원 자동 추천, 트럭 동선 사전 계획
