@@ -1,0 +1,4 @@
+cluster,use_min_mean,use_min_median,use_m_mean,use_m_median,speed_kmh_mean,speed_kmh_median,hour_mean,hour_median,dow_mean,dow_median,age_mean,age_median,is_round_trip_mean,is_round_trip_median,size,share
+1,9.19,8.0,1183.63,1011.33,8.68,8.63,16.89,18.0,2.77,3.0,35.59,33.0,0.04,0.0,18676,0.3735
+2,8.29,7.0,1132.32,939.78,9.18,9.2,9.29,9.0,2.65,3.0,37.02,34.0,0.03,0.0,16428,0.3286
+0,46.08,37.0,4441.92,3283.2,6.93,7.06,14.47,15.0,3.21,3.0,39.14,37.0,0.15,0.0,14896,0.2979
