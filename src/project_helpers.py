@@ -66,8 +66,12 @@ def classify_stl_pattern(
         return "주말"
     if dt.hour == 8 and resid < 0:
         return "평일 출근 급감"
+    if dt.hour == 8 and resid > 0:
+        return "평일 출근 급증"
     if 17 <= dt.hour <= 19 and resid > 0:
         return "평일 저녁 급증"
+    if 17 <= dt.hour <= 19 and resid < 0:
+        return "평일 저녁 급감"
     return "기타 급감" if resid < 0 else "기타 급증"
 
 
